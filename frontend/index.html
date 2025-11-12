@@ -1,0 +1,143 @@
+<!doctype html>
+<meta charset="utf-8" />
+<title>ACM DB Workshop</title>
+<body style="font-family: system-ui, sans-serif; margin: 24px auto; max-width: 980px;">
+  <h1>ACM DB Workshop: SQL vs NoSQL</h1>
+  <p>
+    Start the API. Default <code>STORE=sql</code>. To switch, set <code>STORE=json</code> in <code>backend/.env</code> and restart.
+  </p>
+
+  <section style="display:flex; gap:12px; flex-wrap:wrap; margin: 12px 0;">
+    <button id="btnRefresh">Refresh Tables</button>
+    <button id="btnLoadProducts">Load Products</button>
+    <span id="mode" style="padding:6px 10px;border:1px solid #ccc;border-radius:999px;">STORE: unknown</span>
+  </section>
+
+  <h2>Create Order</h2>
+  <div style="display:flex; gap:8px; align-items:end; flex-wrap:wrap;">
+    <label>Customer <br><input id="customer" value="Alex"></label>
+    <label>Product ID <br><input id="pid" type="number" value="1" min="1"></label>
+    <label>Qty <br><input id="qty" type="number" value="2" min="1"></label>
+    <button id="btnCreate">Create</button>
+  </div>
+
+  <h2>Fetch Order</h2>
+  <div style="display:flex; gap:8px; align-items:end; flex-wrap:wrap;">
+    <label>Order ID <br><input id="oid" type="number" value="1" min="1"></label>
+    <button id="btnFetchOne">Fetch</button>
+    <button id="btnFetchAll">Fetch All</button>
+  </div>
+
+  <h2>Tables</h2>
+  <div style="display:grid; grid-template-columns: 1fr; gap: 18px; margin-top: 10px;">
+    <div>
+      <h3 style="margin:6px 0;">products</h3>
+      <table id="t_products" border="1" cellpadding="6" style="border-collapse:collapse; width:100%;">
+        <thead><tr><th>id</th><th>name</th><th>price_cents</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <div>
+      <h3 style="margin:6px 0;">orders</h3>
+      <table id="t_orders" border="1" cellpadding="6" style="border-collapse:collapse; width:100%;">
+        <thead><tr><th>id</th><th>customer</th><th>created_at</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <div>
+      <h3 style="margin:6px 0;">order_items</h3>
+      <table id="t_items" border="1" cellpadding="6" style="border-collapse:collapse; width:100%;">
+        <thead><tr><th>order_id</th><th>product_id</th><th>qty</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <h2>Output</h2>
+  <pre id="out" style="background:#111;color:#eee;padding:12px;white-space:pre-wrap;border-radius:8px;min-height:120px;"></pre>
+
+  <script>
+    const api = 'http://localhost:3001/api';
+    const $ = s => document.querySelector(s);
+    const cents = n => (n/100).toFixed(2);
+    const setMode = m => $('#mode').textContent = 'STORE: ' + m;
+
+    async function refreshTables() {
+      try {
+        const t = await fetch(`${api}/tables`).then(r => r.json());
+        fillTable('#t_products', t.products, ['id','name','price_cents']);
+        fillTable('#t_orders', t.orders, ['id','customer','created_at']);
+        fillTable('#t_items', t.order_items, ['order_id','product_id','qty']);
+        $('#out').textContent = 'Tables refreshed.';
+      } catch (e) {
+        $('#out').textContent = 'Failed to load /api/tables (is the server running and CORS enabled?)';
+      }
+    }
+
+    function fillTable(sel, rows, cols) {
+      const tbody = document.querySelector(sel + ' tbody');
+      tbody.innerHTML = (rows ?? []).map(r =>
+        `<tr>${cols.map(c => `<td>${escapeHtml(r?.[c] ?? '')}</td>`).join('')}</tr>`
+      ).join('');
+    }
+
+    function escapeHtml(x) {
+      return String(x).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');
+    }
+
+    $('#btnLoadProducts').onclick = async () => {
+      try {
+        const data = await fetch(`${api}/products`).then(r => r.json());
+        $('#out').textContent = data.map(p => `#${p.id} ${p.name} — $${cents(p.price_cents)}`).join('\n');
+      } catch (e) {
+        $('#out').textContent = 'Failed to load products.';
+      }
+    };
+
+    $('#btnCreate').onclick = async () => {
+      const body = {
+        customer: $('#customer').value,
+        items: [{ productId: Number($('#pid').value), qty: Number($('#qty').value) }]
+      };
+      try {
+        const o = await fetch(`${api}/orders`, {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify(body)
+        }).then(r => r.json());
+        $('#out').textContent = 'Order created:\n' + JSON.stringify(o, null, 2);
+        await refreshTables();
+      } catch (e) {
+        $('#out').textContent = 'Failed to create order.';
+      }
+    };
+
+    $('#btnFetchOne').onclick = async () => {
+      const id = $('#oid').value;
+      try {
+        const o = await fetch(`${api}/orders/${id}`).then(r => r.json());
+        $('#out').textContent = JSON.stringify(o, null, 2);
+      } catch (e) {
+        $('#out').textContent = 'Failed to fetch order.';
+      }
+    };
+
+    $('#btnFetchAll').onclick = async () => {
+      try {
+        const arr = await fetch(`${api}/orders/all`).then(r => r.json());
+        $('#out').textContent = JSON.stringify(arr, null, 2);
+      } catch (e) {
+        $('#out').textContent = 'Failed to fetch all orders.';
+      }
+    };
+
+    $('#btnRefresh').onclick = refreshTables;
+
+    (async () => {
+      await refreshTables();
+      try { await fetch(`${api}/products`); setMode('sql or json (see tables)'); } catch {}
+    })();
+  </script>
+</body>
