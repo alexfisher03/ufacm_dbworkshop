@@ -1,7 +1,8 @@
 # UF ACM - DB Workshop
 
 Fall 2025 UF ACM Database Workshop skeleton.
-Complete reference version, for the skeleton version used during the workshop, go to the `demo` branch.
+Complete reference version
+    > for the skeleton version used during the workshop, go to the `demo` branch.
 
 > Prerequisites
 
