@@ -19,7 +19,7 @@ For the completed reference, see the `complete` branch.
 
 2. Install backend deps
     ```bash
-    cd databases-workshop/backend
+    cd ufacm_dbworkshop/backend
     npm i
     ```
 
