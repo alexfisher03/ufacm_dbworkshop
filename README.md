@@ -20,7 +20,7 @@ Complete reference version
 
 2. Install backend deps
     ```bash
-    cd databases-workshop/backend
+    cd ufacm_dbworkshop/backend
     npm i
     ```
 
