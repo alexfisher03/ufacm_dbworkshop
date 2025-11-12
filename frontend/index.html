@@ -1,21 +1,19 @@
 <!doctype html>
 <meta charset="utf-8" />
-<title>DB Workshop — Skeleton (Polished)</title>
-<body style="font-family: system-ui, sans-serif; margin: 24px auto; max-width: 980px; color:#0b1220;">
-  <header style="display:flex; gap:12px; align-items:center; justify-content:space-between; padding-bottom:12px; border-bottom:1px solid #e5e7eb;">
+<title>DB Workshop — Minimal Demo</title>
+<body style="font-family: system-ui, sans-serif; margin: 24px auto; max-width: 720px; color:#0b1220;">
+  <!-- Header shows API base and active backend pulled from /api/info -->
+  <header style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding-bottom:12px; border-bottom:1px solid #e5e7eb;">
     <div>
-      <h1 style="margin:0;">DB Workshop — Minimal Skeleton</h1>
+      <h1 style="margin:0;">DB Workshop — Minimal Demo</h1>
       <div style="color:#6b7280; font-size:14px;">
-        API: <code>http://localhost:3001</code> • Active backend: <code id="store">?</code>
+        API: <code>http://localhost:3001</code> • Backend: <code id="store">?</code>
       </div>
-    </div>
-    <div style="display:flex; gap:8px; flex-wrap:wrap;">
-      <button id="btnRefresh" class="btn">Refresh Tables</button>
-      <button id="btnReset" class="btn btn-danger">Delete all & Reseed</button>
     </div>
   </header>
 
-  <section style="display:grid; grid-template-columns: 1fr; gap: 20px; margin-top:16px;">
+  <!-- Three buttons = three endpoints -->
+  <section style="display:grid; gap:16px; margin-top:16px;">
     <div class="card">
       <h2 style="margin:0 0 8px 0;">Quick Actions</h2>
       <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:end;">
@@ -25,50 +23,12 @@
     </div>
 
     <div class="card">
-      <h2 style="margin:0 0 8px 0;">Create Order</h2>
+      <h2 style="margin:0 0 8px 0;">Create Order (POST /orders)</h2>
       <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:end;">
         <label>Customer<br/><input id="customer" value="Alex" class="inp"></label>
         <label>Product ID<br/><input id="pid" type="number" value="1" min="1" class="inp"></label>
         <label>Qty<br/><input id="qty" type="number" value="2" min="1" class="inp"></label>
         <button id="btnCreate" class="btn">POST /orders</button>
-      </div>
-    </div>
-
-    <div class="card">
-      <h2 style="margin:0 0 8px 0;">Tables (DB view)</h2>
-      <div style="display:grid; grid-template-columns: 1fr; gap:16px;">
-        <div>
-          <div class="table-head">
-            <span>products</span>
-            <span id="count_products" class="chip">0 rows</span>
-          </div>
-          <table id="t_products" class="tbl">
-            <thead><tr><th>id</th><th>name</th><th>price_cents</th></tr></thead>
-            <tbody></tbody>
-          </table>
-        </div>
-
-        <div>
-          <div class="table-head">
-            <span>orders</span>
-            <span id="count_orders" class="chip">0 rows</span>
-          </div>
-          <table id="t_orders" class="tbl">
-            <thead><tr><th>id</th><th>customer</th><th>created_at</th></tr></thead>
-            <tbody></tbody>
-          </table>
-        </div>
-
-        <div>
-          <div class="table-head">
-            <span>order_items</span>
-            <span id="count_items" class="chip">0 rows</span>
-          </div>
-          <table id="t_items" class="tbl">
-            <thead><tr><th>order_id</th><th>product_id</th><th>qty</th></tr></thead>
-            <tbody></tbody>
-          </table>
-        </div>
       </div>
     </div>
 
@@ -82,65 +42,30 @@
     .card { border:1px solid #e5e7eb; border-radius:12px; padding:16px; background:#fff; }
     .btn { padding:8px 12px; border-radius:10px; border:1px solid #d1d5db; background:#f9fafb; cursor:pointer; }
     .btn:hover { background:#eef2ff; border-color:#c7d2fe; }
-    .btn-danger { background:#fef2f2; border-color:#fecaca; }
-    .btn-danger:hover { background:#fee2e2; }
     .inp { padding:8px 10px; border:1px solid #d1d5db; border-radius:8px; min-width: 120px; }
-    .tbl { width:100%; border-collapse:collapse; }
-    .tbl th, .tbl td { border:1px solid #e5e7eb; padding:8px; text-align:left; font-size:14px; }
-    .tbl thead { background:#f3f4f6; }
     .out { background:#0b1220; color:#e5e7eb; padding:12px; border-radius:8px; min-height:120px; white-space:pre-wrap; }
-    .chip { border:1px solid #e5e7eb; border-radius:999px; padding:2px 8px; font-size:12px; color:#6b7280; }
-    .table-head { display:flex; justify-content:space-between; align-items:center; margin:6px 0; }
   </style>
 
   <script>
     const api = 'http://localhost:3001/api';
     const $ = s => document.querySelector(s);
     const cents = n => (n/100).toFixed(2);
-    const setStore = s => $('#store').textContent = s;
+    const log = msg => { const el=$('#out'); el.textContent += (el.textContent?'\n':'') + msg; el.scrollTop=el.scrollHeight; };
 
-    function setCount(id, n) { $(id).textContent = `${n} row${n===1?'':'s'}`; }
-    function escapeHtml(x) { return String(x).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;'); }
+    (async () => {
+      try { const info = await fetch(`${api.replace('/api','')}/api/info`).then(r=>r.json()); $('#store').textContent = info.store; } catch {}
+    })();
 
-    function fillTable(sel, rows, cols) {
-      const tb = document.querySelector(sel + ' tbody');
-      tb.innerHTML = (rows ?? []).map(r =>
-        `<tr>${cols.map(c => `<td>${escapeHtml(r?.[c] ?? '')}</td>`).join('')}</tr>`
-      ).join('');
-    }
-
-    async function refreshTables() {
-      try {
-        const t = await fetch(`${api}/tables`).then(r => r.json());
-        fillTable('#t_products', t.products, ['id','name','price_cents']);
-        fillTable('#t_orders',   t.orders,   ['id','customer','created_at']);
-        fillTable('#t_items',    t.order_items, ['order_id','product_id','qty']);
-        setCount('#count_products', (t.products||[]).length);
-        setCount('#count_orders',   (t.orders||[]).length);
-        setCount('#count_items',    (t.order_items||[]).length);
-        log('Tables refreshed.');
-      } catch {
-        log('Failed to load /api/tables.');
-      }
-    }
-
-    function log(msg) {
-      const out = $('#out');
-      out.textContent += (out.textContent ? '\n' : '') + msg;
-      out.scrollTop = out.scrollHeight;
-    }
-
-    // --- Buttons ---
+    // GET /products
     $('#btnLoadProducts').onclick = async () => {
       try {
-        const data = await fetch(`${api}/products`).then(r => r.json());
-        const lines = data.map(p => `#${p.id} ${p.name} — $${cents(p.price_cents)}`).join('\n');
+        const rows = await fetch(`${api}/products`).then(r => r.json());
+        const lines = rows.map(p => `#${p.id} ${p.name} — $${cents(p.price_cents)}`).join('\n');
         log(lines || '(no products)');
-      } catch {
-        log('GET /products failed.');
-      }
+      } catch { log('GET /products failed.'); }
     };
 
+    // POST /orders
     $('#btnCreate').onclick = async () => {
       const body = {
         customer: $('#customer').value,
@@ -153,36 +78,15 @@
           body: JSON.stringify(body)
         }).then(r => r.json());
         log('Created order: ' + JSON.stringify(res));
-        await refreshTables();
-      } catch {
-        log('POST /orders failed.');
-      }
+      } catch { log('POST /orders failed.'); }
     };
 
+    // GET /orders/all
     $('#btnFetchAll').onclick = async () => {
       try {
-        const arr = await fetch(`${api}/orders/all`).then(r => r.json());
-        log('All orders:\n' + JSON.stringify(arr, null, 2));
-      } catch {
-        log('GET /orders/all failed.');
-      }
+        const orders = await fetch(`${api}/orders/all`).then(r => r.json());
+        log('All orders:\n' + JSON.stringify(orders, null, 2));
+      } catch { log('GET /orders/all failed.'); }
     };
-
-    $('#btnReset').onclick = async () => {
-      try {
-        await fetch(`${api}/admin/reset`, { method:'POST' });
-        log('Reset done (dropped and reseeded).');
-        await refreshTables();
-      } catch {
-        log('POST /admin/reset failed.');
-      }
-    };
-
-    $('#btnRefresh').onclick = refreshTables;
-
-    (async () => {
-      try { const info = await fetch(`${api}/info`).then(r => r.json()); setStore(info.store); } catch {}
-      await refreshTables();
-    })();
   </script>
 </body>
