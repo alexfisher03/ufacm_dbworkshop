@@ -6,15 +6,13 @@ Fall 2025 UF ACM Database Workshop
 For the skeleton version, see the `demo` branch (if you're following the workshop, see `demo` branch)
 - from your terminal, while in the repo root, run
 ```bash
-    git checkout -b demo
-    git pull origin demo
+    git clone -b demo --single-branch https://github.com/alexfisher03/ufacm_dbworkshop.git
 ```
 
 For the completed version, see the `complete` branch.
 - from your terminal, while in the repo root, run
 ```bash
-    git checkout -b complete
-    git pull origin complete
+    git clone -b complete --single-branch https://github.com/alexfisher03/ufacm_dbworkshop.git
 ```
 
 > Prerequisites
